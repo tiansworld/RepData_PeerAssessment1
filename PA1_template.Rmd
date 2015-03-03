@@ -7,13 +7,20 @@ output:
 
 
 ## Loading and preprocessing the data
-
+'''{r echo=TRUE}
+ac_data <- read.csv("activity.csv")
+head(ac_data)
+'''
 
 
 ## What is mean total number of steps taken per day?
-
-
-
+'''{r echo=TRUE}
+total_steps <- sapply(split(act_data$steps,act_data$date),sum,na.rm=T)
+sapply(split(act_data$steps,act_data$date),mean,na.rm=T)
+sapply(split(act_data$steps,act_data$date),median,na.rm=T)
+'''
+'''{r echo=TRUE, fig.width=6,fig.height=4}
+hist(total_steps)
 ## What is the average daily activity pattern?
 
 
