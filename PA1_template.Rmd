@@ -5,28 +5,66 @@ output:
     keep_md: true
 ---
 
-
 ## Loading and preprocessing the data
-'''{r echo=TRUE}
+```{r echo=TRUE}
+.libPaths("./library") # set library path to my own. You may change this to your own library
+library("dplyr") # load dplyr package
 ac_data <- read.csv("activity.csv")
 head(ac_data)
-'''
+actdata <- tbl_df(ac_data)
+```
 
 
-## What is mean total number of steps taken per day?
-'''{r echo=TRUE}
-total_steps <- sapply(split(act_data$steps,act_data$date),sum,na.rm=T)
-sapply(split(act_data$steps,act_data$date),mean,na.rm=T)
-sapply(split(act_data$steps,act_data$date),median,na.rm=T)
-'''
-'''{r echo=TRUE, fig.width=6,fig.height=4}
-hist(total_steps)
+## What is total number of steps taken per day?
+The total number of steps taken per day is:
+```{r echo=TRUE}
+total_steps <- sapply(split(actdata$steps,actdata$date),sum,na.rm=T)
+```
+
+### Histgram of the total number of steps taken per day.
+```{r echo=TRUE, fig.width=6,fig.height=4}
+hist(total_steps,xlab="Day",ylab="Total number of stpes per day")
+```
+
+### The mean and median of the total number of stpes per day are:
+```{r echo=TRUE}
+mean(total_steps)
+median(total_steps)
+```
+
 ## What is the average daily activity pattern?
-
-
+```{r echo=TRUE}
+fivemin_act <- group_by(actdata,interval)
+fivemin_act <- summarise(fivemin_act,mean=mean(steps,na.rm=T))
+plot(fivemin_act,type="l")
+```
 
 ## Imputing missing values
+```{r echo=TRUE}
+sum(is.na(actdata$steps)) ## Calculate the total number of missing value
+```
+There are `r sum(is.na(actdata$steps))` missing values. For simplicity, they are all filled by 15.
+
+``` {r echo=TRUE}
+newdata <- mutate(actdata,steps = replace(steps, is.na(steps), 15))
+```
+The histgram of the total number of steps taken each day after filled NAs.
+```{r echo=TRUE, fig.width=6,fig.height=4}
+new_total_steps <- group_by(newdata,date) %>% summarise(total=sum(steps))    
+hist(new_total_steps$total,xlab="Day",ylab="Total number of stpes per day")
+```
 
 
+The mean of the new dataset is:
+
+```r {echo=TRUE}
+mean(new_total_steps$total)
+```
+
+The median is:
+
+```r {echo=TRUE}
+median(new_total_steps$total)
+```
 
 ## Are there differences in activity patterns between weekdays and weekends?
