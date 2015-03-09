@@ -7,9 +7,11 @@ output:
 
 ## Loading and preprocessing the data
 ```{r echo=TRUE}
-.libPaths("./library") # set library path to my own. You may change this to your own library
+.libPaths(c(.libPaths(),"./library")) # set library path to my own. You may change this to your own library
 library("dplyr") # load dplyr package
-ac_data <- read.csv("activity.csv")
+library("lubridate") # For manipulating date vector
+library("ggplot2") # For plotting panel plot
+ac_data <- read.csv("activity.csv",stringsAsFactors=F)
 head(ac_data)
 actdata <- tbl_df(ac_data)
 ```
@@ -38,7 +40,10 @@ fivemin_act <- group_by(actdata,interval)
 fivemin_act <- summarise(fivemin_act,mean=mean(steps,na.rm=T))
 plot(fivemin_act,type="l")
 ```
-
+It can be seen from the plot that the maxium number of steps appears at about 900 5-minute interval. The exact number is:
+```{r echo=TRUE}
+max
+```
 ## Imputing missing values
 ```{r echo=TRUE}
 sum(is.na(actdata$steps)) ## Calculate the total number of missing value
@@ -48,23 +53,46 @@ There are `r sum(is.na(actdata$steps))` missing values. For simplicity, they are
 ``` {r echo=TRUE}
 newdata <- mutate(actdata,steps = replace(steps, is.na(steps), 15))
 ```
+
 The histgram of the total number of steps taken each day after filled NAs.
+
 ```{r echo=TRUE, fig.width=6,fig.height=4}
-new_total_steps <- group_by(newdata,date) %>% summarise(total=sum(steps))    
-hist(new_total_steps$total,xlab="Day",ylab="Total number of stpes per day")
+new_total_steps <- group_by(newdata,date) %>% summarise(totalmean=sum(steps))    
+hist(new_total_steps$totalmean,xlab="Day",ylab="Total number of stpes per day")
 ```
 
 
 The mean of the new dataset is:
 
-```r {echo=TRUE}
-mean(new_total_steps$total)
+```{r echo=TRUE}
+mean(new_total_steps$totalmean)
 ```
 
 The median is:
 
-```r {echo=TRUE}
-median(new_total_steps$total)
+```{r echo=TRUE}
+median(new_total_steps$totalmean)
 ```
 
 ## Are there differences in activity patterns between weekdays and weekends?
+```{r echo=TRUE, fig.width=8, fig.height=6}
+judgeweekend <- function(x) {
+    weekday <- c("Monday","Tuesday","Wednesday","Thursday","Friday")
+    judge <- x %in% weekday
+    if(judge) {
+        x <- "weekday"
+    }
+    else {
+        x <- "weekend"
+    }
+}
+## Need to modify the plot to panel plot, 
+newdata1 <- newdata %>%
+            mutate(weekdays = weekdays(ymd(date))) %>%
+            mutate(weekdayorweekend = sapply(weekdays,judgeweekend)) %>%
+            group_by(interval,weekdayorweekend) %>%
+            summarise(meansteps = mean(steps))
+
+panelplot <- ggplot(newdata1, aes(interval,meansteps,group=weekdayorweekend)) + geom_line()
+print(panelplot)
+```
