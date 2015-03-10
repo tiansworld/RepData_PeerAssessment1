@@ -93,6 +93,6 @@ newdata1 <- newdata %>%
             group_by(interval,weekdayorweekend) %>%
             summarise(meansteps = mean(steps))
 
-panelplot <- ggplot(newdata1, aes(interval,meansteps,group=weekdayorweekend)) + geom_line()
+panelplot <- ggplot(newdata1, aes(interval,meansteps,group=weekdayorweekend)) + facet_wrap(~ weekdayorweekend,nrow=2) + geom_line()
 print(panelplot)
 ```
