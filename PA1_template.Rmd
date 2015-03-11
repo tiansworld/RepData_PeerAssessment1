@@ -4,10 +4,14 @@ output:
   html_document:
     keep_md: true
 ---
-
 ## Loading and preprocessing the data
-```{r echo=TRUE}
-.libPaths(c(.libPaths(),"./library")) # set library path to my own. You may change this to your own library
+
+```{r setting_and_read_data, echo=TRUE}
+### Set the figure path to the path of the dataset
+opts_chunk$set(fig.path='RepData_PeerAssessment1/figures/', fig.width=8, fig.height=6)
+
+## Add my own library to the path. You may change this to your own library
+.libPaths(c(.libPaths(),"./library")) 
 library("dplyr") # load dplyr package
 library("lubridate") # For manipulating date vector
 library("ggplot2") # For plotting panel plot
@@ -16,66 +20,95 @@ head(ac_data)
 actdata <- tbl_df(ac_data)
 ```
 
-
 ## What is total number of steps taken per day?
 The total number of steps taken per day is:
-```{r echo=TRUE}
+
+```{r total_number, echo=TRUE}
 total_steps <- sapply(split(actdata$steps,actdata$date),sum,na.rm=T)
+total_steps
 ```
 
 ### Histgram of the total number of steps taken per day.
-```{r echo=TRUE, fig.width=6,fig.height=4}
-hist(total_steps,xlab="Day",ylab="Total number of stpes per day")
+
+```{r histgram_1, echo=TRUE}
+hist(total_steps,xlab="Total number of steps taken per day")
 ```
 
-### The mean and median of the total number of stpes per day are:
-```{r echo=TRUE}
+### The mean and median of the total number of steps per day are:
+
+```{r mean_median, echo=TRUE}
 mean(total_steps)
 median(total_steps)
 ```
 
 ## What is the average daily activity pattern?
-```{r echo=TRUE}
+```{r daily_pattern, echo=TRUE}
 fivemin_act <- group_by(actdata,interval)
 fivemin_act <- summarise(fivemin_act,mean=mean(steps,na.rm=T))
-plot(fivemin_act,type="l")
+plot(fivemin_act,type="l",ylab="Average steps taken across all days")
 ```
-It can be seen from the plot that the maxium number of steps appears at about 900 5-minute interval. The exact number is:
-```{r echo=TRUE}
-max
-```
-## Imputing missing values
-```{r echo=TRUE}
-sum(is.na(actdata$steps)) ## Calculate the total number of missing value
-```
-There are `r sum(is.na(actdata$steps))` missing values. For simplicity, they are all filled by 15.
 
-``` {r echo=TRUE}
+It can be seen from the plot that the maxium number of steps appears at about 800 to 900 5-minute interval. In other words, maxium steps is at morning. The exact number is:
+
+```{r maxium_steps, echo=TRUE}
+max(fivemin_act$mean)
+filter(fivemin_act,mean==max(mean))
+```
+So 835 (That is 08:35 AM) 5-minute interval contains the maxium number of steps.
+
+## Imputing missing values
+### Total number of missing values
+```{r NA_number, echo=TRUE}
+## Calculate the total number of missing value
+sum(is.na(actdata$steps)) 
+```
+
+There are `r sum(is.na(actdata$steps))` missing values. 
+
+### Filling the missing values
+For simplicity, the missing values are all filled by 15.
+
+``` {r imputing_NA, echo=TRUE}
+### A new dataset which is equal to the original one but with the missing
+### values filled by 15.
 newdata <- mutate(actdata,steps = replace(steps, is.na(steps), 15))
 ```
 
-The histgram of the total number of steps taken each day after filled NAs.
+### The histgram of the total number of steps taken each day after filled NAs.
 
-```{r echo=TRUE, fig.width=6,fig.height=4}
+```{r new_histgram, echo=TRUE}
 new_total_steps <- group_by(newdata,date) %>% summarise(totalmean=sum(steps))    
-hist(new_total_steps$totalmean,xlab="Day",ylab="Total number of stpes per day")
+hist(new_total_steps$totalmean,xlab="Total number of steps per day")
 ```
 
 
 The mean of the new dataset is:
 
-```{r echo=TRUE}
+```{r new_mean, echo=TRUE}
 mean(new_total_steps$totalmean)
 ```
 
 The median is:
 
-```{r echo=TRUE}
+```{r new_median, echo=TRUE}
 median(new_total_steps$totalmean)
+```
+When comparing with mean and median total number of steps taken per day above, the mean values differ from each other, however the median values are equal.
+The imputing missing data process makes the total number of steps taken per day slightly different, so it will affect the average total number of steps taken per day and therefore will affect the mean total number of steps. 
+The median value however is the middle one of a number list which the numbers are arranged in increasing order. If a number list has even numbers, then its median is the mean of two middle ones. That means, other numbers won't affect the median.
+In this dataset, the median is 10395, which is the total number of steps taken on 2012-10-20. There are not missing values in each 5-minutes interval on 2012-10-20, imputing missing data won't change the value, so the median total number of steps taken per day doesn't change before and after imputing missing data.
+
+```{r impact, echo=TRUE}
+### Why median is not change
+### Which day is the median total number of steps taken per day
+total_steps[total_steps== 10395]
+### Check if that day have missing values
+any(is.na(select(filter(actdata,date=="2012-10-20"),steps)))
 ```
 
 ## Are there differences in activity patterns between weekdays and weekends?
-```{r echo=TRUE, fig.width=8, fig.height=6}
+```{r difference_plot, echo=TRUE}
+### This function is used to judge whether a day is weekday or weekend.
 judgeweekend <- function(x) {
     weekday <- c("Monday","Tuesday","Wednesday","Thursday","Friday")
     judge <- x %in% weekday
@@ -86,13 +119,25 @@ judgeweekend <- function(x) {
         x <- "weekend"
     }
 }
-## Need to modify the plot to panel plot, 
+### Create a new data frame with new columns added and grouped by weekday
+### and weekend,then summarised by average steps across all days in each 
+### 5 min interval.
 newdata1 <- newdata %>%
             mutate(weekdays = weekdays(ymd(date))) %>%
             mutate(weekdayorweekend = sapply(weekdays,judgeweekend)) %>%
             group_by(interval,weekdayorweekend) %>%
             summarise(meansteps = mean(steps))
 
-panelplot <- ggplot(newdata1, aes(interval,meansteps,group=weekdayorweekend)) + facet_wrap(~ weekdayorweekend,nrow=2) + geom_line()
+### Make a plot
+panelplot <- ggplot(
+                newdata1, aes(interval,
+                              meansteps,
+                              group=weekdayorweekend)
+                ) + 
+                facet_wrap(~ weekdayorweekend,nrow=2) + 
+                geom_line()
 print(panelplot)
 ```
+
+The plot shows that there exists differences on average number of steps between weekday and weekend days. 
+The number of steps taken between 0500 to 0900 in weekday days are higher than the numbers which are taken in weekend days. But weekend days have relatively higher number of steps between 1000 to 1600.
