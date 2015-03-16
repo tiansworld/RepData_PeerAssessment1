@@ -1,3 +1,9 @@
+## About the PEER ASSIGNMENT
+It's my careless that I didn't push the md file before the submit deadline.
+Please check my md file in latest commit 239afdade5cd5a0f9416f724ddc81274c8261824.
+The other files are exactly the same between two commits.
+Thank You.
+
 ## Introduction
 
 It is now possible to collect a large amount of data about personal
